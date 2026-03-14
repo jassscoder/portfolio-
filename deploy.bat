@@ -5,8 +5,8 @@ echo ========================================
 echo.
 echo This script will help you deploy your portfolio to GitHub Pages
 echo.
-set /p username="Enter your GitHub username: "
-set /p repo="Enter your repository name (e.g., portfolio): "
+set /p username=jassscoder
+set /p repo=portfolio-
 echo.
 echo Repository URL: https://github.com/%username%/%repo%
 echo.

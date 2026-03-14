@@ -350,3 +350,205 @@ document.getElementById('contactForm').addEventListener('submit', (e) => {
     // Reset form
     e.target.reset();
 });
+
+/* ===== BALL BOUNCE GAME ===== */
+class Ball {
+    constructor(x, y, vx, vy, radius, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = radius;
+        this.color = color;
+        this.trail = [];
+        this.maxTrail = 10;
+    }
+
+    update(canvas) {
+        // Add current position to trail
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > this.maxTrail) {
+            this.trail.shift();
+        }
+
+        // Update position
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Add gravity
+        this.vy += 0.3;
+
+        // Bounce off walls
+        if (this.x - this.radius <= 0 || this.x + this.radius >= canvas.width) {
+            this.vx *= -0.8; // Damping
+            this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+        }
+        if (this.y - this.radius <= 0 || this.y + this.radius >= canvas.height) {
+            this.vy *= -0.8; // Damping
+            this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+        }
+
+        // Stop very slow movement
+        if (Math.abs(this.vx) < 0.1) this.vx = 0;
+        if (Math.abs(this.vy) < 0.1) this.vy = 0;
+    }
+
+    draw(ctx) {
+        // Draw trail
+        ctx.globalAlpha = 0.3;
+        for (let i = 0; i < this.trail.length; i++) {
+            const alpha = (i / this.trail.length) * 0.3;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(this.trail[i].x, this.trail[i].y, this.radius * (1 - i / this.trail.length), 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // Draw ball
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        // Add glow effect
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    collidesWith(other) {
+        const dx = this.x - other.x;
+        const dy = this.y - other.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < this.radius + other.radius;
+    }
+
+    resolveCollision(other) {
+        const dx = this.x - other.x;
+        const dy = this.y - other.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance === 0) return; // Avoid division by zero
+
+        // Normalize
+        const nx = dx / distance;
+        const ny = dy / distance;
+
+        // Separate balls
+        const overlap = this.radius + other.radius - distance;
+        this.x += nx * overlap * 0.5;
+        this.y += ny * overlap * 0.5;
+        other.x -= nx * overlap * 0.5;
+        other.y -= ny * overlap * 0.5;
+
+        // Swap velocities
+        const tempVx = this.vx;
+        const tempVy = this.vy;
+        this.vx = other.vx * 0.9;
+        this.vy = other.vy * 0.9;
+        other.vx = tempVx * 0.9;
+        other.vy = tempVy * 0.9;
+    }
+}
+
+class BallGame {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.balls = [];
+        this.animationId = null;
+        this.colors = [
+            '#00d4ff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24',
+            '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe', '#fd79a8'
+        ];
+
+        this.init();
+    }
+
+    init() {
+        this.canvas.addEventListener('click', (e) => this.addBall(e));
+        this.animate();
+    }
+
+    addBall(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const vx = (Math.random() - 0.5) * 10;
+        const vy = (Math.random() - 0.5) * 10;
+        const radius = Math.random() * 15 + 10;
+        const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+
+        this.balls.push(new Ball(x, y, vx, vy, radius, color));
+        this.updateBallCount();
+    }
+
+    updateBallCount() {
+        const countElement = document.getElementById('ballCount');
+        if (countElement) {
+            countElement.textContent = `Balls: ${this.balls.length}`;
+        }
+    }
+
+    animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Update and draw balls
+        for (let i = 0; i < this.balls.length; i++) {
+            this.balls[i].update(this.canvas);
+
+            // Check collisions
+            for (let j = i + 1; j < this.balls.length; j++) {
+                if (this.balls[i].collidesWith(this.balls[j])) {
+                    this.balls[i].resolveCollision(this.balls[j]);
+                }
+            }
+
+            this.balls[i].draw(this.ctx);
+        }
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    reset() {
+        this.balls = [];
+        this.updateBallCount();
+    }
+
+    addRandomBall() {
+        const x = Math.random() * (this.canvas.width - 40) + 20;
+        const y = Math.random() * (this.canvas.height - 40) + 20;
+        const vx = (Math.random() - 0.5) * 10;
+        const vy = (Math.random() - 0.5) * 10;
+        const radius = Math.random() * 15 + 10;
+        const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+
+        this.balls.push(new Ball(x, y, vx, vy, radius, color));
+        this.updateBallCount();
+    }
+}
+
+// Initialize game when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        const game = new BallGame(canvas);
+
+        // Add ball button
+        const addBallBtn = document.getElementById('addBallBtn');
+        if (addBallBtn) {
+            addBallBtn.addEventListener('click', () => game.addRandomBall());
+        }
+
+        // Reset button
+        const resetBtn = document.getElementById('resetGameBtn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => game.reset());
+        }
+    }
+});
