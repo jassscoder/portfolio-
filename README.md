@@ -16,3 +16,13 @@ This is a personal portfolio website for showcasing projects, skills, and experi
 - Add real resume PDF at `assets/Jaspher_Resume.pdf` to enable download.
 
 To preview, run a simple HTTP server and open `http://localhost:8000` in your browser.
+
+## SYSTEM TESTING
+
+| Test Case ID | Description           | Expected Result                        | Actual Result               | Status | SQL Query Command                         |
+|--------------|-----------------------|----------------------------------------|-----------------------------|--------|-------------------------------------------|
+| TC1          | Add Patient Record    | Patient information saved successfully | Patient saved correctly     | Pass   | INSERT INTO patients (name, age, gender) VALUES ('John Doe', 30, 'Male') |
+| TC2          | View Patient Records  | Patient records are displayed          | Records displayed properly  | Pass   | SELECT * FROM patients                    |
+| TC3          | Schedule Appointment  | Appointment details are saved          | Scheduled successfully      | Pass   | INSERT INTO appointments (patient_id, appointment_date, reason) VALUES (1, '2026-05-10', 'Checkup') |
+| TC4          | Update Patient Record | Changes to patient details are updated | Update successful           | Pass   | UPDATE patients SET age = 31 WHERE patient_id = 1 |
+| TC5          | Delete Appointment    | Appointment is removed from system     | Deletion successful         | Pass   | DELETE FROM appointments WHERE appointment_id = 10 |
